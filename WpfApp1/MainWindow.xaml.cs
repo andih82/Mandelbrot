@@ -134,10 +134,18 @@ namespace MandelbrotViewer
         {
             Dispatcher.Invoke(() =>
             {
-                // Aktualisiere das Bild im Image-Element, um nach jeder Zeile den Fortschritt zu zeigen
-                fractalBitmap.WritePixels(new Int32Rect(0, 0, width, y + 1), pixels, stride, 0);
-                FractalImage.Source = fractalBitmap;
+                try
+                {
+                    // Aktualisiere das Bild im Image-Element, um nach jeder Zeile den Fortschritt zu zeigen
+                    fractalBitmap.WritePixels(new Int32Rect(0, 0, width, y + 1), pixels, stride, 0);
+                    FractalImage.Source = fractalBitmap;
+                }
+                catch
+                {
+                    // do nothing
+                }
             });
+            
         }
 
         private void RenderTDF(int width, int height, byte[] pixels, int stride)
@@ -199,7 +207,7 @@ namespace MandelbrotViewer
             });
 
             // 3. BatchBlock: batch 1000 colored pixels together
-            var batchBlock = new BatchBlock<(int x, int y, Color)>(10000, new GroupingDataflowBlockOptions
+            var batchBlock = new BatchBlock<(int x, int y, Color)>(100, new GroupingDataflowBlockOptions
             {
                 CancellationToken = _cancellationToken
             });
@@ -421,6 +429,7 @@ namespace MandelbrotViewer
         {
             base.OnRenderSizeChanged(sizeInfo);
             CancelCalculation();
+            
             RenderFractal();
         }
 
