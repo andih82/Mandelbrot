@@ -15,11 +15,11 @@ namespace MandelbrotViewer
 {
     public partial class MainWindow : Window
     {
-        private int MaxIterations = 10000;
+        private int MaxIterations = 100;
         private WriteableBitmap fractalBitmap;
         private Color[] colorPalette = new Color[255];
 
-        private double xmin = -2.5, xmax = 1.5, ymin = -2.0, ymax = 2.0;
+        private double xmin = -2.00, xmax = 0.5, ymin = -1.2, ymax = 1.2;
         private Point? dragStart = null;
 
         private CancellationTokenSource _cancellationTokenSource;
@@ -207,7 +207,7 @@ namespace MandelbrotViewer
             });
 
             // 3. BatchBlock: batch 1000 colored pixels together
-            var batchBlock = new BatchBlock<(int x, int y, Color)>(100, new GroupingDataflowBlockOptions
+            var batchBlock = new BatchBlock<(int x, int y, Color)>(1000, new GroupingDataflowBlockOptions
             {
                 CancellationToken = _cancellationToken
             });
@@ -242,16 +242,19 @@ namespace MandelbrotViewer
             batchBlock.LinkTo(renderBlock, new DataflowLinkOptions { PropagateCompletion = true });
 
             // Post all pixels into the pipeline
-            Parallel.For(0, height, y =>
+            //Parallel.For(0, height, y =>
+            for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
                 {
                     if (_cancellationToken.IsCancellationRequested)
                         break;
 
-                    calculateIterationsBlock.Post((x, y));
+                    calculateIterationsBlock.SendAsync((x, y));
+                    
                 }
-            });
+            }
+            //});
 
             // Signal completion
             calculateIterationsBlock.Complete();
@@ -299,7 +302,7 @@ namespace MandelbrotViewer
             int progrss = 0;
             // Hier wird die TPL (Task Parallel Library) verwendet
             Task.WhenAll(
-                ParallelEnumerable.Range(0, height).Select(y =>
+                Enumerable.Range(0, height).Select(y =>
                 {
                     return Task.Run(() =>
                     {
@@ -417,8 +420,10 @@ namespace MandelbrotViewer
                 case Key.Up: ymin -= move; ymax -= move; break;
                 case Key.Down: ymin += move; ymax += move; break;
                 case Key.R:
-                    xmin = -2.5; xmax = 1.5;
-                    ymin = -2.0; ymax = 2.0;
+                    xmin = -2.00;
+                    xmax = 0.5;
+                    ymin = -1.2;
+                    ymax = 1.2;
                     break;
                 default: return;
             }
